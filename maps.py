@@ -54,7 +54,7 @@ class Map:
 
                 distance_x = (creature.x - other_creature.x)**2
                 distance_y = (creature.y - other_creature.y)**2
-                mod_distance = (distance_x - distance_y)**0.5
+                mod_distance = (distance_x + distance_y)**0.5
 
                 if mod_distance <= creature.vision_radius:
                     nearest_creatures.append(creature)
