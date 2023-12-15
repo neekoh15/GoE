@@ -15,11 +15,16 @@ class Player:
         self.actual_map_size = None
         self.nearby_objects = None
         self.nearby_creatures = None
+        self.vision_radius = 200
 
     def update_rect(self, screen:pygame.surface.Surface):
         w, h = screen.get_width(), screen.get_height()
         #center the player on the screen
         self.rect = (w//2, h//2, self.width, self.height)
+
+    def set_coords(self, coords):
+        self.x, self.y = coords
+        self.coords = coords 
 
     def get_actual_map_id(self):
         return self.actual_map_id
@@ -42,7 +47,7 @@ class Player:
         pygame.draw.rect(screen, self.color, self.rect)
 
     def try_to_move(self, dx=0, dy=0):
-        print('TRY TO MOVE!')
+        #print('TRY TO MOVE!')
         new_pos_x = self.x + dx
         new_pos_y = self.y + dy
 
@@ -52,7 +57,7 @@ class Player:
         if not 0 <= new_pos_y < self.actual_map_size[1] - self.height:
             new_pos_y = self.y
 
-        print(f'TRYNG TO MOVE {new_pos_x=},{new_pos_y=}')
+        #print(f'TRYNG TO MOVE {new_pos_x=},{new_pos_y=}')
 
         return (new_pos_x, new_pos_y)
     
