@@ -1,3 +1,5 @@
+import pygame
+
 class Map:
     def __init__(self, id) -> None:
 
@@ -12,7 +14,10 @@ class Map:
         self.objects = []
         self.resources = []
 
-        self.fixed_map_size = (1000, 1000)
+        self.fixed_map_size = (500, 500)
+        self.background_color = None
+        self.corner_color = None
+        self.corner_size = (20, 20)
 
         self.all_entities = self.player + self.creatures + self.objects + self.resources
 
@@ -25,12 +30,15 @@ class Map:
 
         - destination_id: int -> id del destino a donde se quiere redirigir el jugador
         """
+
         self.portals.append({
             'id': id,
             'destination_id': destination_id,
             'rect': portal_coords,
             'available': available
         })
+
+        print('NUEVO PORTAL ANIADIDO')
 
     def enable_portal(self, available_state, portal_id):
         """ 
@@ -111,6 +119,7 @@ class Map:
                         self.new_destination_map_id = portal['destination_id']
                         self.set_event(1)
                         self.player = []
+                        print('PLAYER ON PORTAL ZONE! DESTINATION_ID: ', portal['destination_id'])
 
             
     def update_creatures(self):
@@ -139,11 +148,79 @@ class Map:
         self.update_events()
     
     def draw(self, screen, player_coords):
-        pass
+        self.draw_background(screen, player_coords)
+        self.draw_portals(screen, player_coords)
+
+    def draw_background(self, screen:pygame.surface.Surface, player_coords:tuple):
+        #print(f'MAP DRAW BACKGROUND {player_coords=}')
+
+        w, h = screen.get_width(), screen.get_height()
+        px, py = player_coords
+        
+        b_rel_x, b_rel_y = w//2 - px, h//2 - py
+
+        c_w, c_h = self.corner_size
+        
+        c1_x, c1_y = (0,0)
+        c1_relx, c1_rely = w//2 + (c1_x - px), h//2 + (c1_y - py)
+        
+        c2_x, c2_y = (0, self.fixed_map_size[1]-c_h)
+        c2_relx, c2_rely = w//2 + (c2_x - px), h//2 + (c2_y - py)
+
+        c3_x, c3_y = (self.fixed_map_size[0]-c_w, self.fixed_map_size[1]-c_h)
+        c3_relx, c3_rely = w//2 + (c3_x - px), h//2 + (c3_y - py)
+
+        c4_x, c4_y = (self.fixed_map_size[0]-c_w, 0)
+        c4_relx, c4_rely = w//2 + (c4_x - px), h//2 + (c4_y - py)
+
+        #draw background terrain:
+        pygame.draw.rect(screen, self.background_color, (b_rel_x, b_rel_y, *self.fixed_map_size))
+
+        #draw corners
+        pygame.draw.rect(screen, (50, 50, 50), (c1_relx, c1_rely, c_w, c_h))
+        pygame.draw.rect(screen, (50, 50, 50), (c2_relx, c2_rely, c_w, c_h))
+        pygame.draw.rect(screen, (50, 50, 50), (c3_relx, c3_rely, c_w, c_h))
+        pygame.draw.rect(screen, (50, 50, 50), (c4_relx, c4_rely, c_w, c_h))        
+
+    def draw_portals(self, screen:pygame.surface.Surface, player_coords:tuple):
+        w, h = screen.get_width(), screen.get_height()
+        for portal in self.portals:
+            print('DIBUJAND PORTAL: ', portal)
+
+            px, py = player_coords
+            port_x1, port_y1, port_x2, port_y2 = portal['rect']
+
+            rel_x = w//2 + (port_x1 - px)
+            rel_y = h//2 + (port_y1 - py)
+            print(f'REL X: {rel_x}, REL Y: {rel_y}')
+            pygame.draw.rect(screen, (0, 255, 0), (rel_x, rel_y, abs(port_x2 - port_x1), abs(port_y2-port_y1)))
     
     def __repr__(self) -> str:
         return f'Map id: {self.id}'
     
 
+class Aldea(Map):
 
-map1 = Map(id=0)
+    def __init__(self, id=0) -> None:
+        print('mapa aldea inicializando ..')     
+        super().__init__(id)
+
+        self.background_color = (125, 200, 200)
+        self.corner_color = (50, 50, 50)
+
+        self.add_new_portal(id='p1', 
+                            portal_coords=(0,0, 30, 30), 
+                            destination_id=1,
+                            available=True
+                            )
+        
+class Bosque(Map):
+    def __init__(self, id=1) -> None:
+        super().__init__(id)
+
+        self.background_color = (200, 200, 200)
+        self.corner_color = (30, 30, 30)
+
+
+aldea = Aldea(id=0)
+bosque = Bosque(id=1)
