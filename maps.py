@@ -1,4 +1,5 @@
 import pygame
+import random
 
 class Map:
     def __init__(self, id) -> None:
@@ -8,6 +9,8 @@ class Map:
         self.maps_connected = []
         self.portals = []
         self.new_destination_map_id = None
+        self.new_destination_coords = None
+        self.spawn_coords = None
 
         self.player = []
         self.creatures = []
@@ -21,7 +24,13 @@ class Map:
 
         self.all_entities = self.player + self.creatures + self.objects + self.resources
 
-    def add_new_portal(self, id:int, portal_coords:tuple, destination_id:int, available=True):
+    def reset_stats(self):
+        self.set_event(0)
+        self.new_destination_map_id = None
+        self.new_destination_coords = None
+        self.spawn_coords = None
+
+    def add_new_portal(self, id:int, portal_coords:tuple, destination_id:int, destination_coords:tuple, available=True):
         """ 
         Crea un nuevo portal hacia un nuevo destino
 
@@ -34,6 +43,7 @@ class Map:
         self.portals.append({
             'id': id,
             'destination_id': destination_id,
+            'destination_coords': destination_coords,
             'rect': portal_coords,
             'available': available
         })
@@ -52,20 +62,28 @@ class Map:
             if portal['id'] == portal_id:
                 portal['available'] = available_state
 
+    def create_creatures(self, creature, ammount):
+        for _ in range(ammount):
+            c = creature
+            c.x, c.y = random.randint(0, self.fixed_map_size[0] - c.width), random.randint(0, self.fixed_map_size - c.height)
+            self.creatures.append(creature)
 
-    def get_nearest_creatures(self, creature):
+    def create_resources(self, resource, ammount):
+        for _ in range(ammount):
+            self.resources.append(resource)
+
+    def get_player_nearest_creatures(self):
 
         nearest_creatures = []
-        
+
         for other_creature in self.creatures:
-            if other_creature != creature:
 
-                distance_x = (creature.x - other_creature.x)**2
-                distance_y = (creature.y - other_creature.y)**2
-                mod_distance = (distance_x + distance_y)**0.5
+            distance_x = (self.player.x - other_creature.x)**2
+            distance_y = (self.player.y - other_creature.y)**2
+            mod_distance = (distance_x + distance_y)**0.5
 
-                if mod_distance <= creature.vision_radius:
-                    nearest_creatures.append(creature)
+            if mod_distance <= self.player.vision_radius:
+                nearest_creatures.append(other_creature)
 
         return nearest_creatures
 
@@ -92,7 +110,6 @@ class Map:
         """
         return self.event    
 
-
     def update_events(self):
         """ 
         Actualiza el valor de evento de mapa en base a la posicion del jugador
@@ -103,8 +120,7 @@ class Map:
 
         if not self.player:
             # si no esta el player en este mapa, se resetan los eventos y el buffer de nuevo destino
-            self.set_event(0)
-            self.new_destination_map_id = None
+            self.reset_stats()
 
         if self.player:
 
@@ -117,6 +133,7 @@ class Map:
                     if x1 < self.player.x < x2 and y1 < self.player.y < y2:
                         """ el jugador se encuentra dentro de la zona del portal """
                         self.new_destination_map_id = portal['destination_id']
+                        self.new_destination_coords = portal['destination_coords']
                         self.set_event(1)
                         self.player = []
                         print('PLAYER ON PORTAL ZONE! DESTINATION_ID: ', portal['destination_id'])
@@ -150,6 +167,14 @@ class Map:
     def draw(self, screen, player_coords):
         self.draw_background(screen, player_coords)
         self.draw_portals(screen, player_coords)
+
+        for c in self.get_player_nearest_creatures():
+
+            pygame.draw.rect(screen, c.color, c.get_rect(screen, player_coords))
+            
+
+        for r in self.resources:
+            pygame.draw.rect(screen, r.color, r.get_rect(screen, player_coords))
 
     def draw_background(self, screen:pygame.surface.Surface, player_coords:tuple):
         #print(f'MAP DRAW BACKGROUND {player_coords=}')
@@ -185,14 +210,14 @@ class Map:
     def draw_portals(self, screen:pygame.surface.Surface, player_coords:tuple):
         w, h = screen.get_width(), screen.get_height()
         for portal in self.portals:
-            print('DIBUJAND PORTAL: ', portal)
+            #print('DIBUJAND PORTAL: ', portal)
 
             px, py = player_coords
             port_x1, port_y1, port_x2, port_y2 = portal['rect']
 
             rel_x = w//2 + (port_x1 - px)
             rel_y = h//2 + (port_y1 - py)
-            print(f'REL X: {rel_x}, REL Y: {rel_y}')
+            #print(f'REL X: {rel_x}, REL Y: {rel_y}')
             pygame.draw.rect(screen, (0, 255, 0), (rel_x, rel_y, abs(port_x2 - port_x1), abs(port_y2-port_y1)))
     
     def __repr__(self) -> str:
@@ -209,10 +234,13 @@ class Aldea(Map):
         self.corner_color = (50, 50, 50)
 
         self.add_new_portal(id='p1', 
-                            portal_coords=(0,0, 30, 30), 
+                            portal_coords=(470,0, 500, 500), 
                             destination_id=1,
+                            destination_coords=(50, 250),
                             available=True
                             )
+        
+        self.create_creatures()
         
 class Bosque(Map):
     def __init__(self, id=1) -> None:
@@ -220,6 +248,13 @@ class Bosque(Map):
 
         self.background_color = (200, 200, 200)
         self.corner_color = (30, 30, 30)
+
+        self.add_new_portal(id='p1', 
+                            portal_coords=(0,0, 30, 500), 
+                            destination_id=0,
+                            destination_coords=(430, 250),
+                            available=True
+                            )
 
 
 aldea = Aldea(id=0)
