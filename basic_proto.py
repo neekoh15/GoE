@@ -1,45 +1,10 @@
 import pygame
-from maps import map1
+from maps import aldea, bosque
+from player import Player
 
-class Player:
-    def __init__(self, coords:tuple, actual_map_id:int, name:str, default=False) -> None:
-        self.coords = coords
-        self.x = coords[0]
-        self.y = coords[1]
-        self.actual_map_id = actual_map_id
-        self.name = name
-        self.default_player= default
-        self.rect = None
-        self.color = (255, 255, 255)
-        self.width = 20
-        self.height = 20
-
-    def update_rect(self, screen:pygame.surface.Surface):
-        w, h = screen.get_width(), screen.get_height()
-        #center the player on the screen
-        self.rect = (w//2, h//2, self.width, self.height)
-
-    def get_actual_map_id(self):
-        return self.actual_map_id
-    
-    def set_actual_map(self, actual_map_id):
-        self.actual_map_id = actual_map_id
-
-    def update(self):
-        pass
-
-    def draw(self, screen:pygame.display):
-        self.update_rect(screen)
-
-        pygame.draw.rect(screen, self.color, self.rect)
-
-
-    def __repr__(self) -> str:
-        return f'{self.default_player=}\n{self.coords=}\n{self.actual_map_id=}\n{self.name=}\n{self.x=}\n{self.y=}'
-        
 class Map_Manager:
     def __init__(self) -> None:
-        self.maps = [map1]
+        self.maps = [aldea, bosque]
         self.maps_dict = {m.id:m for m in self.maps}
         self.actual_map = None
 
@@ -101,6 +66,8 @@ class Game:
         self.map_manager.set_player_actual_map(self.player.actual_map_id)
         self.map_manager.assign_player_to_map(self.current_map, self.player)
 
+        self.player.actual_map_size = self.current_map.fixed_map_size
+
         print(f'Manejador de mapas iniciado correctamente: {self.map_manager.actual_map}\n{self.current_map=}\n{self.current_map.player=}')
 
     def init_player(self):
@@ -128,6 +95,8 @@ class Game:
                         actual_map_id=player_data['actual_map_id'],
                         name= player_data['name']
                     )
+
+                    return None
 
 
             except Exception as e:
@@ -159,7 +128,11 @@ class Game:
         if self.current_map is not self.map_manager.actual_map:
             # flag - el usuario cambio de mapa
             print(' El jugador cambio de mapa')
+            # setear el nuevo map id en el jugador
+            self.player.set_actual_map(self.map_manager.actual_map.id, self.map_manager.actual_map.fixed_map_size)
+            # setear los limites del mapa en el jugador (DEBERIA HACERSE DIFERENTE - )
             self.current_map = self.map_manager.actual_map
+
 
     def draw_game(self):
         self.current_map.draw(self.screen, self.player.coords)
@@ -198,6 +171,6 @@ class Game:
 if __name__ == "__main__":
 
     WIN_SIZE = 700, 700
-    FPS = 20
+    FPS = 60
     game = Game(WIN_SIZE=WIN_SIZE, FPS=FPS)
     game.run_game()
