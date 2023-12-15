@@ -25,9 +25,10 @@ class Map_Manager:
         if self.actual_map.get_event() == 1:
             print('evento cambio de mapa!')
             new_destination_map_id = self.actual_map.new_destination_map_id
+            new_spawn_coords = self.actual_map.new_destination_coords
 
             self.actual_map = self.get_map(new_destination_map_id)
-
+            self.actual_map.spawn_coords = new_spawn_coords
 
     def assign_player_to_map(self, map_to_assign, player):
 
@@ -127,11 +128,13 @@ class Game:
 
         if self.current_map is not self.map_manager.actual_map:
             # flag - el usuario cambio de mapa
+            self.current_map = self.map_manager.actual_map
             print(' El jugador cambio de mapa')
             # setear el nuevo map id en el jugador
-            self.player.set_actual_map(self.map_manager.actual_map.id, self.map_manager.actual_map.fixed_map_size)
             # setear los limites del mapa en el jugador (DEBERIA HACERSE DIFERENTE - )
-            self.current_map = self.map_manager.actual_map
+            self.player.set_actual_map(self.map_manager.actual_map.id, self.map_manager.actual_map.fixed_map_size)
+            self.player.set_coords(self.current_map.spawn_coords)
+            self.map_manager.assign_player_to_map(self.current_map, self.player)
 
 
     def draw_game(self):
@@ -171,6 +174,6 @@ class Game:
 if __name__ == "__main__":
 
     WIN_SIZE = 700, 700
-    FPS = 60
+    FPS = 120
     game = Game(WIN_SIZE=WIN_SIZE, FPS=FPS)
     game.run_game()
