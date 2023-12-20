@@ -19,13 +19,16 @@ class Player:
         self.rect = (self.x, self.y, self.width, self.height)
 
 class Creature:
-    def __init__(self,x ,y) -> None:
-        self.x = x
-        self.y = y
+    def __init__(self, creature_data) -> None:
+        
+        self.x, self.y = creature_data['COORDS']
+        self.id = creature_data['ID']
+        self.sprite = creature_data['SPRITE']
+
         self.width, self.height = (30, 30)
-        self.rect = (x, y, self.width, self.height)
+        self.rect = (self.x, self.y, self.width, self.height)
         self.color = (255, 0, 255)
-        self.sprite = ''
+        
 
     def update(self, server_response:tuple[int]):
         self.x, self.y = server_response['COORDS']
@@ -47,7 +50,7 @@ class Client:
 
         self.visual_data = []
         self.player:Player = None
-        self.creatures:dict = None
+        self.creatures:dict = {}
 
         self.events = {
             'MOUSE': {
@@ -67,7 +70,7 @@ class Client:
         """ Connects to the server and retrieve player data """
         try:
             server_response:tuple = self.network.connect()
-            self.player = Player(*server_response)
+            self.player = Player(server_response)
             self.connected_to_server = True
             return 1
         
@@ -89,15 +92,26 @@ class Client:
         self.events['MOUSE']['RCLICK'] = m_events[1]
         self.events['MOUSE']['MCLICK'] = m_events[2]
 
+    def catch_pygame_events(self):
+        events = pygame.event.get()
+
+        if pygame.QUIT in [e.type for e in events]:
+            self.run = False
+
     def update_game(self, server_response:dict):
-        player_data:Player = server_response('PLAYER_DATA')
+        #print('SERVER RESPONSE> ', server_response)
+        
+        player_data:dict = server_response.get('PLAYER_DATA')
+        #print('PLAYER DATA> ', player_data)
         if player_data:
             self.player.update(player_data)
 
-        creature_data:Creature = server_response.get('CREATURE_DATA')
+        creature_data:dict = server_response.get('CREATURE_DATA')
+        #print('CREATURE DATA> ', creature_data)
         if creature_data:
             for cd in creature_data:
-                self.creatures[cd.get_id()] = cd
+                creature = Creature(cd)
+                self.creatures[creature.id] = creature
 
     def draw_game(self):
         """ Draw the game on the screen 
@@ -105,6 +119,8 @@ class Client:
         - Draw player
         - Draw Creatures
         """
+
+        self.window.fill((0,0,0))
         # draw map background
         pygame.draw.rect(self.window, (0, 125, 0), (-self.player.x +self.width//2, -self.player.y + self.height//2, 600, 600))
         
@@ -117,16 +133,24 @@ class Client:
         # draw player
         pygame.draw.rect(self.window, self.player.color, (self.width//2, self.height//2, self.player.width, self.player.height))
 
+        pygame.display.update()
+
     def main(self):
 
         self.connect_to_server()
 
         if self.connected_to_server:
             while self.run:
+                self.catch_pygame_events()
+                self.catch_keyboard_events()
+                self.catch_mouse_events()
+
                 server_response = self.network.send_data(self.events)
+                
                 self.update_game(server_response=server_response)
+                
                 self.draw_game()
 
-    
-
-        
+if __name__ == '__main__':
+    client = Client()
+    client.main()
