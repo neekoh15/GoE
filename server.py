@@ -5,7 +5,7 @@ class Server:
         self.online_players = []
         self.dummy_player = None
         self.maps = {
-            'map1': [Dummy_Creature()]
+            'map1': [Dummy_Creature(map_size=(600,600)).get_data()]
         }
 
     def connect(self):
@@ -45,6 +45,8 @@ class Dummy_Player:
         return self.__actual_map
 
     def update_status(self, events):
+        mouse_events = events.get['MOUSE']
+        keyboards_events = events.get['KEYBOARD']
         return self.data
 
 class Dummy_Creature:
@@ -54,11 +56,14 @@ class Dummy_Creature:
         self.__y = random.randint(0, map_size[1])
         self.__sprite = 'dummy_sprite.png'
 
-        self.data = {
+        self.__data = {
             'SPRITE': self.__sprite,
             'COORDS': (self.__x, self.__y),
             'ID': self.__id
         }
+
+    def get_data(self):
+        return self.__data
 
     def get_coords(self):
         return (self.__x, self.__y)
